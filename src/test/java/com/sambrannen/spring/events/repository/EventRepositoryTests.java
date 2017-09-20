@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,65 +51,72 @@ class EventRepositoryTests {
 	@Autowired
 	EventRepository repo;
 
+	@Nested
+	class ReadTests {
 
-	@Test
-	void findAll() {
-		List<Event> events = repo.findAll();
-		assertThat(events).isNotNull();
-		assertThat(events.size()).isGreaterThan(0);
+		@Test
+		void findAll() {
+			List<Event> events = repo.findAll();
+			assertThat(events).isNotNull();
+			assertThat(events.size()).isGreaterThan(0);
+		}
+
+		@Test
+		void findById() {
+			assertThat(repo.findById(1L)).isPresent();
+			assertThat(repo.findById(999L)).isNotPresent();
+		}
 	}
 
-	@Test
-	void findById() {
-		assertThat(repo.findById(1L)).isPresent();
-		assertThat(repo.findById(999L)).isNotPresent();
-	}
+	@Nested
+	class WriteTests {
 
-	@Test
-	void save() {
-		final int numRowsInTable = countNumEvents();
-		final LocalDate tomorrow = LocalDate.now().plusDays(1);
+		@Test
+		void save() {
+			final int numRowsInTable = countNumEvents();
+			final LocalDate tomorrow = LocalDate.now().plusDays(1);
 
-		Event event = new Event();
-		event.setName("test event");
-		event.setLocation("test suite");
-		event.setEventDate(tomorrow);
+			Event event = new Event();
+			event.setName("test event");
+			event.setLocation("test suite");
+			event.setEventDate(tomorrow);
 
-		Event savedEvent = repo.save(event);
-		repo.flush();
+			Event savedEvent = repo.save(event);
+			repo.flush();
 
-		assertThat(savedEvent.getId()).isNotNull();
-		assertNumEvents(numRowsInTable + 1);
-		Event retrievedSavedEvent = repo.findById(savedEvent.getId()).orElse(null);
-		assertThat(retrievedSavedEvent).isEqualTo(event);
-		assertThat(retrievedSavedEvent.getEventDate()).isEqualTo(tomorrow);
-	}
+			assertThat(savedEvent.getId()).isNotNull();
+			assertNumEvents(numRowsInTable + 1);
+			Event retrievedSavedEvent = repo.findById(savedEvent.getId()).orElse(null);
+			assertThat(retrievedSavedEvent).isEqualTo(event);
+			assertThat(retrievedSavedEvent.getEventDate()).isEqualTo(tomorrow);
+		}
 
-	@Test
-	void update() {
-		final int numRowsInTable = countNumEvents();
+		@Test
+		void update() {
+			final int numRowsInTable = countNumEvents();
 
-		Event event = repo.findById(1L).orElse(null);
-		assertThat(event).isNotNull();
-		event.setName("updated name");
+			Event event = repo.findById(1L).orElse(null);
+			assertThat(event).isNotNull();
+			event.setName("updated name");
 
-		Event updatedEvent = repo.save(event);
-		repo.flush();
+			Event updatedEvent = repo.save(event);
+			repo.flush();
 
-		assertNumEvents(numRowsInTable);
-		String updatedName = lookUpNameInDatabase(updatedEvent);
-		assertThat(updatedName).isEqualTo("updated name");
-	}
+			assertNumEvents(numRowsInTable);
+			String updatedName = lookUpNameInDatabase(updatedEvent);
+			assertThat(updatedName).isEqualTo("updated name");
+		}
 
-	@Test
-	void delete() {
-		final int numRowsInTable = countNumEvents();
+		@Test
+		void delete() {
+			final int numRowsInTable = countNumEvents();
 
-		Event event = repo.findById(1L).orElse(null);
-		assertThat(event).isNotNull();
-		repo.delete(event);
-		repo.flush();
-		assertNumEvents(numRowsInTable - 1);
+			Event event = repo.findById(1L).orElse(null);
+			assertThat(event).isNotNull();
+			repo.delete(event);
+			repo.flush();
+			assertNumEvents(numRowsInTable - 1);
+		}
 	}
 
 	private String lookUpNameInDatabase(Event event) {
